@@ -120,25 +120,37 @@ with tab1:
 # ================= التاب الثاني: توقع الإنتاجية (Regression) =================
 with tab2:
     st.header("Predict Expected Crop Yield (hg/ha)")
-    st.info("💡 Estimate the harvest amount based on soil and climate conditions using our optimized Regression model.")
+    st.info("💡 Estimate the harvest amount using our optimized XGBoost Regression model.")
     
-    y_N = st.number_input("Nitrogen (N) for Yield", 0.0, 140.0, 50.0, key="y_n")
-    y_P = st.number_input("Phosphorus (P) for Yield", 0.0, 145.0, 50.0, key="y_p")
-    y_K = st.number_input("Potassium (K) for Yield", 0.0, 205.0, 50.0, key="y_k")
-    y_temp = st.number_input("Temperature (°C) for Yield", 5.0, 45.0, 25.0, key="y_temp")
-    y_hum = st.number_input("Humidity (%) for Yield", 10.0, 100.0, 70.0, key="y_hum")
-    y_ph = st.number_input("pH Level for Yield", 3.5, 10.0, 6.5, key="y_ph")
-    y_rain = st.number_input("Rainfall (mm) for Yield", 20.0, 300.0, 100.0, key="y_rain")
-    
+    col_y1, col_y2 = st.columns(2)
+    with col_y1:
+        y_N = st.number_input("Nitrogen (N)", 0.0, 140.0, 50.0, key="y_n")
+        y_P = st.number_input("Phosphorus (P)", 0.0, 145.0, 50.0, key="y_p")
+        y_K = st.number_input("Potassium (K)", 0.0, 205.0, 50.0, key="y_k")
+        y_temp = st.number_input("Temperature (°C)", 5.0, 45.0, 25.0, key="y_temp")
+    with col_y2:
+        y_hum = st.number_input("Humidity (%)", 10.0, 100.0, 70.0, key="y_hum")
+        y_ph = st.number_input("pH Level", 3.5, 10.0, 6.5, key="y_ph")
+        y_rain = st.number_input("Rainfall (mm)", 20.0, 300.0, 100.0, key="y_rain")
+        
+    # اختيار المحصول والمنطقة لو الموديل بيطلبهم (حسب الداتاسيت بتاعتك)
+    selected_item = st.selectbox("Select Crop Item for Yield", ["Maize", "Rice, paddy", "Wheat", "Soybeans", "Potatoes"], key="y_item")
+    selected_area = st.selectbox("Select Region/Area", ["Egypt", "Saudi Arabia", "India", "Brazil", "USA"], key="y_area")
+
     if st.button("Calculate Expected Yield", use_container_width=True, key="btn_yield"):
-        if yield_model is not None:
-            input_data = np.array([[y_N, y_P, y_K, y_temp, y_hum, y_ph, y_rain]])
+        try:
+            # تجهيز المدخلات بنفس الشكل اللي الموديل متوقع بيه الأعمدة
+            # (لو موديل الـ Regression بيستقبل العوامل ومعاهم الـ Encoding القديم، 
+            # الأسهل إننا نبعت مصفوفة متوافقة أو نطابق الشكل اللي الكولاب اتدرب عليه)
+            
+            input_data = np.array([[y_N, y_P, y_K, y_temp, y_hum, y_ph, y_rain]]) # (عدلها حسب الأعمدة الإضافية لو متطلبة)
             predicted_yield = yield_model.predict(input_data)[0]
+            
             st.metric(label="Estimated Yield Production", value=f"{predicted_yield:,.2f} hg/ha")
             st.info("💡 Note: hg/ha stands for Hectogram per hectare.")
-        else:
-            st.error("⚠️ Regression model file ('yield_model.pkl') is missing. Please upload it to your repository.")
-
+        except Exception as e:
+            st.error(f"⚠️ Prediction Error: {e}")
+            st.warning("Make sure the input features match exactly what the regression model expects.")
 # ================= التاب الثالث: مقارنة الموديلات =================
 with tab3:
     st.header("📊 Algorithm Accuracy Comparison (Classification)")
